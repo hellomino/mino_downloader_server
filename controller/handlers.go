@@ -1,7 +1,10 @@
-package main
+package controller
 
 import (
 	"context"
+	"minodl/config"
+	"minodl/dao"
+	"minodl/service"
 	"net/http"
 	"strconv"
 	"time"
@@ -32,15 +35,7 @@ type CreateTaskReq struct {
 	Url   string `json:"url" binding:"required"`
 }
 
-type Handler struct {
-	svc *Service
-}
-
-func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
-}
-
-func (h *Handler) GetPrivacy(c *gin.Context) {
+func GetPrivacy(c *gin.Context) {
 	// TODO: read from DB or file
 	c.JSON(http.StatusOK, gin.H{
 		"title":   "隐私协议（示例）",
@@ -48,46 +43,46 @@ func (h *Handler) GetPrivacy(c *gin.Context) {
 	})
 }
 
-func (h *Handler) GetTerms(c *gin.Context) {
+func GetTerms(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"title":   "服务条款（示例）",
 		"content": "这是占位服务条款。请替换为真实文本或从后端配置加载。",
 	})
 }
 
-func (h *Handler) Register(c *gin.Context) {
+func Register(c *gin.Context) {
 	var req RegisterReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	u, err := h.svc.CreateUser(req.Email, req.Password)
+	u, err := service.CreateUser(req.Email, req.Password)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	token, _ := generateJWT(u.ID, h.svc.cfg.JWTSecret)
+	token, _ := generateJWT(u.ID, config.Get().JWTSecret)
 	c.JSON(http.StatusOK, gin.H{"user": gin.H{"id": u.ID, "email": u.Email}, "token": token})
 }
 
-func (h *Handler) Login(c *gin.Context) {
+func Login(c *gin.Context) {
 	var req LoginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	u, err := h.svc.Authenticate(req.Email, req.Password)
+	u, err := service.Authenticate(req.Email, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
-	token, _ := generateJWT(u.ID, h.svc.cfg.JWTSecret)
+	token, _ := generateJWT(u.ID, config.Get().JWTSecret)
 	c.JSON(http.StatusOK, gin.H{"user": gin.H{"id": u.ID, "email": u.Email}, "token": token})
 }
 
-func (h *Handler) GetProfile(c *gin.Context) {
+func GetProfile(c *gin.Context) {
 	uid := c.GetUint("user_id")
-	u, err := h.svc.repo.GetUserByEmail("") // intentionally not used - instead fetch by ID
+	u, err := dao.GetUserByEmail("") // intentionally not used - instead fetch by ID
 	// better approach: direct DB query by ID
 	_ = u
 	_ = err.Error()
@@ -95,14 +90,14 @@ func (h *Handler) GetProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": uid, "email": "placeholder@example.com"})
 }
 
-func (h *Handler) CreateTask(c *gin.Context) {
+func CreateTask(c *gin.Context) {
 	uid := c.GetUint("user_id")
 	var req CreateTaskReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	t, err := h.svc.CreateTaskForUser(uid, req.Title, req.Url)
+	t, err := service.CreateTaskForUser(uid, req.Title, req.Url)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -110,9 +105,9 @@ func (h *Handler) CreateTask(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"task": t})
 }
 
-func (h *Handler) ListTasks(c *gin.Context) {
+func ListTasks(c *gin.Context) {
 	uid := c.GetUint("user_id")
-	tasks, err := h.svc.ListTasks(uid)
+	tasks, err := service.ListTasks(uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -120,10 +115,10 @@ func (h *Handler) ListTasks(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"tasks": tasks})
 }
 
-func (h *Handler) GetTask(c *gin.Context) {
+func GetTask(c *gin.Context) {
 	uid := c.GetUint("user_id")
 	id, _ := strconv.Atoi(c.Param("id"))
-	t, err := h.svc.GetTask(uid, uint(id))
+	t, err := service.GetTask(uid, uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 		return
@@ -131,40 +126,40 @@ func (h *Handler) GetTask(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"task": t})
 }
 
-func (h *Handler) MarkTaskComplete(c *gin.Context) {
+func MarkTaskComplete(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var body struct {
 		FilePath string `json:"file_path"`
 		VideoURL string `json:"video_url"`
 	}
 	_ = c.BindJSON(&body)
-	if err := h.svc.MarkComplete(uint(id), body.FilePath, body.VideoURL); err != nil {
+	if err := service.MarkComplete(uint(id), body.FilePath, body.VideoURL); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
-func (h *Handler) StartTask(c *gin.Context) {
+func StartTask(c *gin.Context) {
 	uid := c.GetUint("user_id")
 	id, _ := strconv.Atoi(c.Param("id"))
-	t, err := h.svc.GetTask(uid, uint(id))
+	t, err := service.GetTask(uid, uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 		return
 	}
 	// Kick off background simulated download
-	if err := h.svc.StartDownloadTask(context.Background(), t); err != nil {
+	if err := service.StartDownloadTask(context.Background(), t); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
-func (h *Handler) StreamTask(c *gin.Context) {
+func StreamTask(c *gin.Context) {
 	uid := c.GetUint("user_id")
 	id, _ := strconv.Atoi(c.Param("id"))
-	t, err := h.svc.GetTask(uid, uint(id))
+	t, err := service.GetTask(uid, uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 		return

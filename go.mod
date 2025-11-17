@@ -1,4 +1,4 @@
-module github.com/example/gin_video_downloader
+module minodl
 
 go 1.20
 

@@ -1,4 +1,4 @@
-package main
+package models
 
 import (
 	"time"
@@ -31,7 +31,7 @@ type Task struct {
 	SourceURL string         `gorm:"size:1024" json:"source_url"` // original share link
 	VideoURL  string         `gorm:"size:1024" json:"video_url"`  // resolved direct video URL or storage path (TODO)
 	Status    TaskStatus     `gorm:"size:32;index" json:"status"`
-	Progress  float32        `json:"progress"`
+	Progress  string         `json:"progress"`
 	FilePath  string         `gorm:"size:1024" json:"file_path"` // local storage path when downloaded
 	ErrorMsg  string         `gorm:"size:1024" json:"error_msg"`
 	CreatedAt time.Time      `json:"created_at"`

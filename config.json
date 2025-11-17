@@ -1,0 +1,9 @@
+{
+  "mysqldsn": "",
+  "redis_addr":"",
+  "redis_pass": "",
+  "redis_db": 0,
+  "listen_addr": "",
+  "slat": "",
+  "jwt_secret": ""
+}
