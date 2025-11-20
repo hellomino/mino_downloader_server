@@ -9,6 +9,7 @@ import (
 
 func MinoAPI() *gin.Engine {
 	router := gin.Default()
+	gin.SetMode(gin.ReleaseMode)
 	// public
 	router.GET("/health", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"ok": true}) })
 	router.GET("/policy/privacy", controller.GetPrivacy)
