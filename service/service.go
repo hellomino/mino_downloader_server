@@ -37,10 +37,14 @@ func Authenticate(email, password string) (*models.User, error) {
 }
 
 // Tasks
-func CreateTaskForUser(userID uint, title, sourceURL string) (*models.Task, error) {
+func CreateTaskForUser(userID uint, sourceURL string) (*models.Task, error) {
+	videoInfo, err := ParseVideoInfo(sourceURL)
+	if err != nil {
+		return nil, err
+	}
 	t := &models.Task{
 		UserID:    userID,
-		Title:     title,
+		Title:     videoInfo.Title,
 		SourceURL: sourceURL,
 		Status:    models.StatusPending,
 		Progress:  "0",

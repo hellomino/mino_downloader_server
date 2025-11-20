@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"github.com/gin-gonic/gin"
 	"io"
+	"minodl/log"
 	"minodl/models"
 	"net/http"
 	"os/exec"
@@ -16,42 +17,29 @@ const ZeroProcess = "0"
 
 var (
 	progressRe = regexp.MustCompile(`(?i)\[download\]\s+([\d\.]+)%`)
-	tasks      = make(map[string]*models.Task) // task_id -> TaskInfo
+	tasks      = make(map[uint]*models.Task) // task_id -> TaskInfo
 	tasksMutex sync.RWMutex
 )
 
-func HandleStream(c *gin.Context) {
-	videoURL := c.Query("url")
-	taskID := c.Query("task_id")
-	if videoURL == "" || taskID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "missing url or task_id"})
-		return
-	}
-	tasksMutex.Lock()
-	tasks[taskID] = &models.Task{
-		VideoURL: videoURL,
-		Progress: ZeroProcess,
-		Status:   models.StatusPending,
-	}
-	tasksMutex.Unlock()
-
+// HandleStream 实时流处理
+func HandleStream(c *gin.Context, t *models.Task) {
 	cmd := exec.Command(
 		"yt-dlp",
 		"-f", "best[ext=mp4]/best",
 		"-o", "-",
-		videoURL,
+		t.SourceURL,
 	)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		updateTask(taskID, models.StatusFailed, ZeroProcess)
+		updateTask(t.ID, models.StatusFailed, ZeroProcess)
 		c.String(http.StatusInternalServerError, "stdout pipe error: %v", err)
 		return
 	}
 	stderr, _ := cmd.StderrPipe()
 
 	if err := cmd.Start(); err != nil {
-		updateTask(taskID, models.StatusFailed, ZeroProcess)
+		updateTask(t.ID, models.StatusFailed, ZeroProcess)
 		c.String(http.StatusInternalServerError, "start yt-dlp failed: %v", err)
 		return
 	}
@@ -74,22 +62,22 @@ func HandleStream(c *gin.Context) {
 			line := scanner.Text()
 			if match := progressRe.FindStringSubmatch(line); len(match) == 2 {
 				progress := match[1]
-				updateTask(taskID, models.StatusRunning, progress)
-				broadcastProgress(taskID, progress)
+				updateTask(t.ID, models.StatusRunning, progress)
+				broadcastProgress(t.ID, progress)
 			}
 		}
 	}()
 
 	err = cmd.Wait()
 	if err == nil {
-		updateTask(taskID, models.StatusCompleted, "100")
-		broadcastProgress(taskID, "100")
+		updateTask(t.ID, models.StatusCompleted, "100")
+		broadcastProgress(t.ID, "100")
 	} else {
-		updateTask(taskID, models.StatusFailed, "0")
+		updateTask(t.ID, models.StatusFailed, "0")
 	}
 }
 
-func broadcastProgress(taskID, progress string) {
+func broadcastProgress(taskID uint, progress string) {
 	progressOfTask := gin.H{
 		"task_id":  taskID,
 		"progress": progress,
@@ -97,9 +85,10 @@ func broadcastProgress(taskID, progress string) {
 	_ = progressOfTask
 }
 
-func updateTask(taskID string, status models.TaskStatus, progress string) {
+func updateTask(taskID uint, status models.TaskStatus, progress string) {
 	tasksMutex.Lock()
 	defer tasksMutex.Unlock()
+	log.Info("update task: %d, progress:%s", taskID, progress)
 	if t, ok := tasks[taskID]; ok {
 		t.Progress = progress
 		t.Status = status

@@ -1,9 +1,9 @@
 package controller
 
 import (
-	"context"
 	"minodl/config"
 	"minodl/dao"
+	"minodl/models"
 	"minodl/service"
 	"net/http"
 	"strconv"
@@ -12,12 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
-
-// Simple claims
-type Claims struct {
-	UserID uint `json:"user_id"`
-	jwt.RegisteredClaims
-}
 
 // request/response structs
 type RegisterReq struct {
@@ -31,8 +25,7 @@ type LoginReq struct {
 }
 
 type CreateTaskReq struct {
-	Title string `json:"title" binding:"required"`
-	Url   string `json:"url" binding:"required"`
+	Url string `json:"url" binding:"required"`
 }
 
 func GetPrivacy(c *gin.Context) {
@@ -82,12 +75,12 @@ func Login(c *gin.Context) {
 
 func GetProfile(c *gin.Context) {
 	uid := c.GetUint("user_id")
-	u, err := dao.GetUserByEmail("") // intentionally not used - instead fetch by ID
-	// better approach: direct DB query by ID
-	_ = u
-	_ = err.Error()
-	// TODO: implement GetUserByID in repo if needed
-	c.JSON(http.StatusOK, gin.H{"id": uid, "email": "placeholder@example.com"})
+	u, err := dao.GetUserById(int64(uid))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid uid"})
+		return
+	}
+	c.JSON(http.StatusOK, u)
 }
 
 func CreateTask(c *gin.Context) {
@@ -97,7 +90,7 @@ func CreateTask(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	t, err := service.CreateTaskForUser(uid, req.Title, req.Url)
+	t, err := service.CreateTaskForUser(uid, req.Url)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -140,22 +133,6 @@ func MarkTaskComplete(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
-func StartTask(c *gin.Context) {
-	uid := c.GetUint("user_id")
-	id, _ := strconv.Atoi(c.Param("id"))
-	t, err := service.GetTask(uid, uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
-		return
-	}
-	// Kick off background simulated download
-	if err := service.StartDownloadTask(context.Background(), t); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"ok": true})
-}
-
 func StreamTask(c *gin.Context) {
 	uid := c.GetUint("user_id")
 	id, _ := strconv.Atoi(c.Param("id"))
@@ -164,19 +141,28 @@ func StreamTask(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 		return
 	}
-	// If task has VideoURL or FilePath, return streaming info.
-	// TODO: you may implement proxy streaming, signed URLs, or range requests here.
-	c.JSON(http.StatusOK, gin.H{
-		"video_url": t.VideoURL,
-		"file_path": t.FilePath,
-		"status":    t.Status,
-		"progress":  t.Progress,
-	})
+	HandleStream(c, t)
+}
+
+func StartTask(c *gin.Context) {
+	// TODO save to cloud disk
+	/*uid := c.GetUint("user_id")
+	id, _ := strconv.Atoi(c.Param("id"))
+	t, err := service.GetTask(uid, uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	if err := service.StartDownloadTask(context.Background(), t); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})*/
 }
 
 // Helper: JWT generation
 func generateJWT(userID uint, secret string) (string, error) {
-	claims := Claims{
+	claims := models.Claims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(72 * time.Hour)),
@@ -185,37 +171,4 @@ func generateJWT(userID uint, secret string) (string, error) {
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
-}
-
-// AuthMiddleware extracts JWT and sets user_id in context
-func AuthMiddleware(secret string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		auth := c.GetHeader("Authorization")
-		if auth == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing Authorization header"})
-			return
-		}
-		// expect: Bearer <token>
-		var tokenStr string
-		if len(auth) > 7 && auth[:7] == "Bearer " {
-			tokenStr = auth[7:]
-		} else {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid Authorization header"})
-			return
-		}
-		token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(t *jwt.Token) (interface{}, error) {
-			return []byte(secret), nil
-		})
-		if err != nil || !token.Valid {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
-			return
-		}
-		if claims, ok := token.Claims.(*Claims); ok {
-			c.Set("user_id", claims.UserID)
-		} else {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid claims"})
-			return
-		}
-		c.Next()
-	}
 }

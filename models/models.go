@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/golang-jwt/jwt/v5"
 	"time"
 
 	"gorm.io/gorm"
@@ -37,4 +38,9 @@ type Task struct {
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+type Claims struct {
+	UserID uint `json:"user_id"`
+	jwt.RegisteredClaims
 }

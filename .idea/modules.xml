@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/gin_video_downloader.iml" filepath="$PROJECT_DIR$/.idea/gin_video_downloader.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/mino_downloader_server.iml" filepath="$PROJECT_DIR$/.idea/mino_downloader_server.iml" />
     </modules>
   </component>
 </project>

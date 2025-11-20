@@ -19,6 +19,14 @@ func GetUserByEmail(email string) (*models.User, error) {
 	return &u, nil
 }
 
+func GetUserById(uid int64) (*models.User, error) {
+	var u models.User
+	if err := mdb.Mysql.Where("id = ?", uid).First(&u).Error; err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
 func CreateTask(t *models.Task) error {
 	return mdb.Mysql.Create(t).Error
 }
