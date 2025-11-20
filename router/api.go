@@ -25,7 +25,7 @@ func MinoAPI() *gin.Engine {
 		auth.GET("/tasks/:id", controller.GetTask)
 		auth.POST("/tasks/:id/complete", controller.MarkTaskComplete) // used when server-side download finishes
 		auth.POST("/tasks/:id/start", controller.StartTask)           // kick off mock download job
-		auth.GET("/tasks/:id/stream", controller.StreamTask)          // returns video URL or proxy (TODO)
+		auth.GET("/tasks/:id/stream", controller.StreamTask)
 	}
 	return router
 }

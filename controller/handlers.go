@@ -141,6 +141,10 @@ func StreamTask(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 		return
 	}
+	if t.Status == models.StatusCompleted {
+		c.JSON(http.StatusConflict, gin.H{"msg": "this task is already completed"})
+		return
+	}
 	HandleStream(c, t)
 }
 

@@ -52,6 +52,8 @@ func CreateTaskForUser(userID uint, sourceURL string) (*models.Task, error) {
 	if err := dao.CreateTask(t); err != nil {
 		return nil, err
 	}
+	t.VideoURL = fmt.Sprintf("/tasks/%d/stream", t.ID)
+	_ = dao.UpdateTask(t)
 	return t, nil
 }
 
