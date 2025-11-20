@@ -25,11 +25,11 @@ func InitGorm(cfg *config.Config) (*gorm.DB, error) {
 }
 
 func InitRedis(cfg *config.Config) *redis.Client {
-	Redis = redis.NewClient(&redis.Options{
-		Addr:     cfg.RedisAddr,
-		Password: cfg.RedisPass,
-		DB:       cfg.RedisDB,
-	})
+	opt, err := redis.ParseURL(cfg.RedisDSN)
+	if err != nil {
+		log.Fatal(err)
+	}
+	Redis = redis.NewClient(opt)
 	return Redis
 }
 

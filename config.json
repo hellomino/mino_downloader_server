@@ -1,9 +1,7 @@
 {
-  "mysqldsn": "",
-  "redis_addr":"",
-  "redis_pass": "",
-  "redis_db": 0,
-  "listen_addr": "",
-  "slat": "",
-  "jwt_secret": ""
+  "listen_addr": ":1222",
+  "mysqldsn": "root:root@tcp(192.168.0.34:3506)/test1?charset=utf8mb4&parseTime=True&loc=Local",
+  "redisdsn":"redis://:mypassword@192.168.0.34:6379/0",
+  "jwt_secret": "5d270ccf2b4bd9258992e6f00dbc9c26",
+  "slat": "XentaKillHGLFHkds11"
 }

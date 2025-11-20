@@ -10,9 +10,7 @@ var cfgFile *string = flag.String("c", "config.json", "config file")
 
 type Config struct {
 	MysqlDSN   string `json:"mysqldsn"`
-	RedisAddr  string `json:"redis_addr"`
-	RedisPass  string `json:"redis_pass"`
-	RedisDB    int    `json:"redis_db"`
+	RedisDSN   string `json:"redisdsn"`
 	ListenAddr string `json:"listen_addr"`
 	Slat       string `json:"slat"`
 	JWTSecret  string `json:"jwt_secret"`
@@ -36,11 +34,4 @@ func LoadConfig() (*Config, error) {
 		cfg = &temp
 	}
 	return cfg, nil
-}
-
-func envOr(k, def string) string {
-	if v := os.Getenv(k); v != "" {
-		return v
-	}
-	return def
 }
