@@ -1,0 +1,18 @@
+package message
+
+type Msg interface {
+	Raw() any
+	GetCode() int
+}
+type H5Message struct {
+	Code int
+	Data any
+}
+
+func (m *H5Message) GetCode() int {
+	return m.Code
+}
+
+func (m *H5Message) Raw() any {
+	return m.Data
+}
