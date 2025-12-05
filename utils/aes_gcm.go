@@ -9,6 +9,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"hash"
 	"io"
@@ -53,6 +54,14 @@ const (
 	keySize   = 32 // AES-256
 	iterCount = 100000
 )
+
+func EncryptAny(passphrase string, obj any) (string, error) {
+	if data, err := json.Marshal(obj); err != nil {
+		return "", err
+	} else {
+		return EncryptString(passphrase, data)
+	}
+}
 
 // EncryptString 使用 passphrase 加密 plaintext，返回 base64(salt||nonce||ciphertext)
 func EncryptString(passphrase string, plaintext []byte) (string, error) {
