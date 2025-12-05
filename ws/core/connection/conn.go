@@ -13,6 +13,8 @@ type Conn interface {
 	GetConnectionId() int64
 	WriteMessage(message.Msg) error
 	IsLimited(message.Msg) bool
+	CheckOrigin(message.Msg) bool
+	AddTick()
 	Close() error
 }
 
@@ -21,7 +23,17 @@ type H5WsConn struct {
 	key      string
 	conn     *websocket.Conn
 	UserData any
-	Type     string // 在线类型
+	Type     string
+	Origin   string
+	Tick     int
+}
+
+func (hw *H5WsConn) AddTick() {
+	hw.Tick++
+}
+
+func (hw *H5WsConn) CheckOrigin(msg message.Msg) bool {
+	return true
 }
 
 func (hw *H5WsConn) IsLimited(msg message.Msg) bool {
