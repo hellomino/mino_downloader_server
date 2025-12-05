@@ -11,6 +11,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/nats-io/stan.go v0.10.4
 	github.com/redis/go-redis/v9 v9.0.0
+	github.com/spf13/cobra v1.10.2
 	github.com/valyala/fasthttp v1.68.0
 	golang.org/x/crypto v0.43.0
 	gorm.io/driver/mysql v1.5.0
@@ -30,6 +31,7 @@ require (
 	github.com/go-sql-driver/mysql v1.7.1 // indirect
 	github.com/goccy/go-json v0.10.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -45,6 +47,7 @@ require (
 	github.com/nats-io/nkeys v0.4.11 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.9 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
