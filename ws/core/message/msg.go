@@ -1,18 +1,18 @@
 package message
 
 type Msg interface {
-	Raw() any
+	Raw() []byte
 	GetCode() int
 }
 type H5Message struct {
 	Code int
-	Data any
+	Data string
 }
 
 func (m *H5Message) GetCode() int {
 	return m.Code
 }
 
-func (m *H5Message) Raw() any {
-	return m.Data
+func (m *H5Message) Raw() []byte {
+	return []byte(m.Data)
 }
