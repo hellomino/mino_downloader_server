@@ -7,4 +7,5 @@ type VPUser struct {
 	Avatar   string `json:"avatar"`
 	Until    int64  `json:"until"`
 	Paid     bool   `json:"paid"`
+	Clue     string `json:"clue"`
 }

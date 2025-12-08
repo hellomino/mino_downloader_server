@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-// Connect H5业务连接websocket
+// Connect 连接websocket
 func Connect(c *gin.Context) {
 	// 子协议, 至少三个参数
 	subs := strings.Split(c.Request.Header.Get("Sec-WebSocket-Protocol"), ",")
@@ -78,16 +78,9 @@ func Connect(c *gin.Context) {
 		return
 	}
 	defer conn.Close()
-	var userToken any
-	if len(subs) == 4 {
-		userToken = strings.TrimSpace(subs[3])
-		// 用户已登录，将连接KEY替换为用户token
-		if tk, ok := userToken.(string); ok && tk != consts.EMPTY {
-			clientKey = tk
-		}
-	}
-	log.Debug("client connected,ip:%s, key:%s, userToken:%v", clientIP, clientKey, userToken)
-	h5conn := connection.CreateNewH5Conn(userToken, clientKey, conn)
+	origin := c.Request.Header.Get("Origin")
+	log.Debug("client connected,ip:%s, key:%s, origin:%s, userToken:%v", clientIP, clientKey, origin)
+	h5conn := connection.CreateNewH5Conn(clientKey, origin, conn)
 	if h5conn == nil {
 		return
 	}

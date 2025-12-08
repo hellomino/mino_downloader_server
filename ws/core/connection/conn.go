@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/websocket"
 	"minodl/utils"
 	"minodl/ws/core/message"
+	"minodl/ws/wsmd"
 	"strconv"
 	"time"
 )
@@ -15,17 +16,32 @@ type Conn interface {
 	IsLimited(message.Msg) bool
 	CheckOrigin(message.Msg) bool
 	AddTick()
+	SetUser(*wsmd.VPUser)
+	GetUser() *wsmd.VPUser
 	Close() error
+	GetConn() *websocket.Conn
 }
 
 type H5WsConn struct {
 	id       int64
 	key      string
 	conn     *websocket.Conn
-	UserData any
+	UserData *wsmd.VPUser
 	Type     string
 	Origin   string
 	Tick     int
+}
+
+func (hw *H5WsConn) GetConn() *websocket.Conn {
+	return hw.conn
+}
+
+func (hw *H5WsConn) SetUser(u *wsmd.VPUser) {
+	hw.UserData = u
+}
+
+func (hw *H5WsConn) GetUser() *wsmd.VPUser {
+	return hw.UserData
 }
 
 func (hw *H5WsConn) AddTick() {
@@ -42,8 +58,8 @@ func (hw *H5WsConn) IsLimited(msg message.Msg) bool {
 	limited, _ := utils.Limiter.IsLimited(msgKey, time.Second, 5)
 	if limited {
 		_ = hw.WriteMessage(&message.H5Message{
-			Code: 911,
-			Data: "fuck you bro.",
+			Code: message.RespError,
+			Data: "message limited, please try later",
 		})
 	}
 	return limited

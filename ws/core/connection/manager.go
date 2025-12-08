@@ -20,15 +20,15 @@ var (
 )
 
 // CreateNewH5Conn 创建新的H5长连接
-func CreateNewH5Conn(userData any, key string, c *websocket.Conn) *H5WsConn {
+func CreateNewH5Conn(key, origin string, c *websocket.Conn) *H5WsConn {
 	redisClient := mdb.Redis
 	redisClient.HSet(context.Background(), ConnectedUsers, key, 1)
 	hc := &H5WsConn{
-		id:       atomic.LoadInt64(&NodeOnlineId),
-		key:      key,
-		conn:     c,
-		UserData: userData,
-		Type:     CTypeFree,
+		id:     atomic.LoadInt64(&NodeOnlineId),
+		key:    key,
+		conn:   c,
+		Origin: origin,
+		Type:   CTypeFree,
 	}
 	UserConnections.Store(hc.id, hc)
 	return hc

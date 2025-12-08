@@ -4,13 +4,18 @@ const (
 	HeartBeat = 10000 + iota // 心跳
 	Register
 	Login
-	Logout
+	LoadPac
 	LoadServer
 )
 
 const (
 	RespRegister = 20000 + iota
 	RespLogin
-	RespLogout
+	RespPacScript
 	RespServerList
+)
+
+const (
+	RespError = 30000 + iota
+	RespTips
 )

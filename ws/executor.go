@@ -20,6 +20,10 @@ func register(Code int, H func(conn connection.Conn, msg message.Msg) error) {
 // 注册需要处理的消息
 func init() {
 	register(message.HeartBeat, handler.HeartbeatHandler)
+	register(message.Register, handler.Register)
+	register(message.Login, handler.Login)
+	register(message.LoadPac, handler.LoadPac)
+	register(message.LoadServer, handler.LoadServer)
 }
 
 // 执行处理器，处理消息
