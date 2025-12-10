@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func MinoAPI() *gin.Engine {
+func DownloadApi() *gin.Engine {
 	router := gin.Default()
 	gin.SetMode(gin.ReleaseMode)
 	// public

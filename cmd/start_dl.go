@@ -35,7 +35,7 @@ var dl = &cobra.Command{
 
 		_ = mdb.InitRedis(cfg)
 		// 初始化API服务
-		r := router.MinoAPI()
+		r := router.DownloadApi()
 		srv := &http.Server{
 			Addr:    cfg.ListenAddr,
 			Handler: r,
