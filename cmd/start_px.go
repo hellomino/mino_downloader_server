@@ -9,6 +9,7 @@ import (
 	"minodl/config"
 	"minodl/mdb"
 	"minodl/router"
+	"minodl/ws/wsmd"
 	"net/http"
 	"os"
 	"os/signal"
@@ -31,6 +32,11 @@ var px = &cobra.Command{
 		_, err = mdb.InitGorm(cfg)
 		if err != nil {
 			log.Fatalf("db init: %v", err)
+		}
+
+		err = mdb.Mysql.AutoMigrate(&wsmd.VPUser{}, &wsmd.VPServer{})
+		if err != nil {
+			log.Fatalf("db migrate: %v", err)
 		}
 
 		_ = mdb.InitRedis(cfg)

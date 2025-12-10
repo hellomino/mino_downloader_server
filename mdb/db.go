@@ -6,7 +6,6 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"minodl/config"
-	"minodl/models"
 )
 
 var (
@@ -20,7 +19,6 @@ func InitGorm(cfg *config.Config) (*gorm.DB, error) {
 		return nil, err
 	}
 	Mysql = db
-	_ = autoMigrate(db)
 	return db, nil
 }
 
@@ -31,9 +29,4 @@ func InitRedis(cfg *config.Config) *redis.Client {
 	}
 	Redis = redis.NewClient(opt)
 	return Redis
-}
-
-func autoMigrate(db *gorm.DB) error {
-	log.Println("running auto migrate...")
-	return db.AutoMigrate(&models.User{}, &models.Task{})
 }

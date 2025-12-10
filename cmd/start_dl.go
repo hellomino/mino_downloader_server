@@ -8,6 +8,7 @@ import (
 	"log"
 	"minodl/config"
 	"minodl/mdb"
+	"minodl/models"
 	"minodl/router"
 	"net/http"
 	"os"
@@ -32,7 +33,10 @@ var dl = &cobra.Command{
 		if err != nil {
 			log.Fatalf("db init: %v", err)
 		}
-
+		err = mdb.Mysql.AutoMigrate(&models.User{}, &models.Task{})
+		if err != nil {
+			log.Fatalf("db migrate: %v", err)
+		}
 		_ = mdb.InitRedis(cfg)
 		// 初始化API服务
 		r := router.DownloadApi()
