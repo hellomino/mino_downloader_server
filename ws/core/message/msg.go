@@ -5,8 +5,8 @@ type Msg interface {
 	GetCode() int
 }
 type H5Message struct {
-	Code int
-	Data string
+	Code int    `json:"code"`
+	Data string `json:"data"`
 }
 
 func (m *H5Message) GetCode() int {

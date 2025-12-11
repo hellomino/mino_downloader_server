@@ -75,12 +75,15 @@ func Login(conn connection.Conn, msg message.Msg) error {
 				}
 				if err = mdb.Mysql.Model(&wsmd.VPUser{}).Where("account=? and password=?", u.Account, u.Password).First(&u).Error; err != nil {
 					log.Error("find user:%+v, err:%v", u, err)
+					msgTip := "server error"
 					if errors.Is(err, gorm.ErrRecordNotFound) {
-						_ = conn.WriteMessage(&message.H5Message{
-							Code: message.RespTips,
-							Data: "not found user, register first",
-						})
+						msgTip = "not found user, register first"
 					}
+					_ = conn.WriteMessage(&message.H5Message{
+						Code: message.RespError,
+						Data: msgTip,
+					})
+					return err
 				} else {
 					newClue, _ := utils.EncryptString(config.Get().Slat, []byte(u.Account))
 					if resp, err := utils.EncryptAny(config.Get().Slat, &map[string]string{

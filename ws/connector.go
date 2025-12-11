@@ -79,7 +79,7 @@ func Connect(c *gin.Context) {
 	}
 	defer conn.Close()
 	origin := c.Request.Header.Get("Origin")
-	log.Debug("client connected,ip:%s, key:%s, origin:%s, userToken:%v", clientIP, clientKey, origin)
+	log.Debug("client connected,ip:%s, key:%s, origin:%s", clientIP, clientKey, origin)
 	h5conn := connection.CreateNewH5Conn(clientKey, origin, conn)
 	if h5conn == nil {
 		return
