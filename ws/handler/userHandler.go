@@ -11,6 +11,7 @@ import (
 	"minodl/ws/core/connection"
 	"minodl/ws/core/message"
 	"minodl/ws/wsmd"
+	"time"
 )
 
 func Register(conn connection.Conn, msg message.Msg) error {
@@ -19,6 +20,7 @@ func Register(conn connection.Conn, msg message.Msg) error {
 	} else {
 		var err error
 		var plainBytes []byte
+		var u wsmd.VPUser
 		if plainBytes, err = utils.DecryptString(config.Get().Slat, string(msg.Raw())); err != nil {
 			log.Error("decrypt message:%+v, err:%v", msg, err)
 		} else {
@@ -26,9 +28,11 @@ func Register(conn connection.Conn, msg message.Msg) error {
 			if err = json.Unmarshal(plainBytes, &data); err != nil {
 				log.Error("Unmarshal message:%+v, err:%v", msg, err)
 			} else {
-				u := wsmd.VPUser{
+				u = wsmd.VPUser{
 					Account:  data["account"],
 					Password: data["password"],
+					Plan:     "FREE",
+					Until:    time.Now().AddDate(0, 0, 7).Unix(),
 				}
 				if err = mdb.Mysql.Create(&u).Error; err != nil {
 					log.Error("create user:%+v, err:%v", u, err)
@@ -36,11 +40,17 @@ func Register(conn connection.Conn, msg message.Msg) error {
 			}
 		}
 		if err == nil {
-			if resp, err := utils.EncryptAny(config.Get().Slat, &map[string]string{
-				"code": "SUCCESS",
+			newClue, _ := utils.EncryptString(config.Get().Slat, []byte(u.Account))
+			if resp, err := utils.EncryptAny(config.Get().Slat, &map[string]any{
+				"id":    u.ID,
+				"clue":  newClue,
+				"plan":  u.Plan,
+				"until": time.Unix(u.Until, 0).Format("2006-01-02 15:04:05"),
 			}); err == nil {
+				u.Clue = newClue
+				conn.SetUser(&u)
 				_ = conn.WriteMessage(&message.H5Message{
-					Code: message.RespRegister,
+					Code: message.RespLogin,
 					Data: resp,
 				})
 			} else {
@@ -73,11 +83,11 @@ func Login(conn connection.Conn, msg message.Msg) error {
 					Account:  data["account"],
 					Password: data["password"],
 				}
-				if err = mdb.Mysql.Model(&wsmd.VPUser{}).Where("account=? and password=?", u.Account, u.Password).First(&u).Error; err != nil {
+				if err = mdb.Mysql.Model(&wsmd.VPUser{}).Where("account=?", u.Account).First(&u).Error; err != nil {
 					log.Error("find user:%+v, err:%v", u, err)
 					msgTip := "server error"
 					if errors.Is(err, gorm.ErrRecordNotFound) {
-						msgTip = "not found user, register first"
+						msgTip = "user not exist, register first"
 					}
 					_ = conn.WriteMessage(&message.H5Message{
 						Code: message.RespError,
@@ -85,10 +95,19 @@ func Login(conn connection.Conn, msg message.Msg) error {
 					})
 					return err
 				} else {
+					if u.Password != data["password"] {
+						_ = conn.WriteMessage(&message.H5Message{
+							Code: message.RespError,
+							Data: "password error",
+						})
+						return err
+					}
 					newClue, _ := utils.EncryptString(config.Get().Slat, []byte(u.Account))
-					if resp, err := utils.EncryptAny(config.Get().Slat, &map[string]string{
-						"code": "SUCCESS",
-						"clue": newClue,
+					if resp, err := utils.EncryptAny(config.Get().Slat, &map[string]any{
+						"id":    u.ID,
+						"clue":  newClue,
+						"plan":  u.Plan,
+						"until": time.Unix(u.Until, 0).Format("2006-01-02 15:04:05"),
 					}); err == nil {
 						u.Clue = newClue
 						conn.SetUser(&u)
