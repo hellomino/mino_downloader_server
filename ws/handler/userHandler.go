@@ -14,6 +14,12 @@ import (
 	"time"
 )
 
+const (
+	FREE  = "FREE"
+	PRO   = "PRO"
+	ULTRA = "ULTRA"
+)
+
 func Register(conn connection.Conn, msg message.Msg) error {
 	if conn.IsLimited(msg) {
 		_ = conn.Close()
@@ -31,7 +37,7 @@ func Register(conn connection.Conn, msg message.Msg) error {
 				u = wsmd.VPUser{
 					Account:  data["account"],
 					Password: data["password"],
-					Plan:     "FREE",
+					Plan:     PRO,
 					Until:    time.Now().AddDate(0, 0, 7).Unix(),
 				}
 				if err = mdb.Mysql.Create(&u).Error; err != nil {
