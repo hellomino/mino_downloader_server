@@ -68,7 +68,6 @@ func Register(conn connection.Conn, msg message.Msg) error {
 
 func Login(conn connection.Conn, msg message.Msg) error {
 	if conn.IsLimited(msg) {
-		_ = conn.Close()
 	} else {
 		var err error
 		var plainBytes []byte

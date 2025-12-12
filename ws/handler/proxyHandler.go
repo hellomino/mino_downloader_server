@@ -59,18 +59,15 @@ export const MOCK_NODES: ProxyNode[] = [
 
 func LoadServer(conn connection.Conn, msg message.Msg) error {
 	if conn.IsLimited(msg) {
-		_ = conn.Close()
 	} else {
-		if conn.GetUser() == nil {
-			_ = conn.WriteMessage(&message.H5Message{
-				Code: message.RespTips,
-				Data: "please login first",
-			})
-			return nil
+		guest := conn.GetUser() == nil
+		clue := config.Get().Slat
+		if !guest {
+			clue = conn.GetUser().Clue
 		}
 		var err error
 		var plainBytes []byte
-		if plainBytes, err = utils.DecryptString(conn.GetUser().Clue, string(msg.Raw())); err != nil {
+		if plainBytes, err = utils.DecryptString(clue, string(msg.Raw())); err != nil {
 			log.Error("decrypt message:%+v, err:%v", msg, err)
 		} else {
 			var data map[string]string
@@ -86,8 +83,8 @@ func LoadServer(conn connection.Conn, msg message.Msg) error {
 				}
 				// return server list
 				var freeServer, paidServers []wsmd.VPServer
-				freeJson := mdb.Redis.Get(context.Background(), consts.FreeServers).String()
-				paidJson := mdb.Redis.Get(context.Background(), consts.PaidServers).String()
+				freeJson := mdb.Redis.Get(context.Background(), consts.FreeServers).Val()
+				paidJson := mdb.Redis.Get(context.Background(), consts.PaidServers).Val()
 				if freeJson != consts.EMPTY {
 					err = json.Unmarshal([]byte(freeJson), &freeServer)
 					if err != nil {
@@ -102,7 +99,7 @@ func LoadServer(conn connection.Conn, msg message.Msg) error {
 				}
 				allServers := append(paidServers, freeServer...)
 				serversBytes, _ := json.Marshal(&allServers)
-				serversBytesEncrypt, _ := utils.EncryptString(conn.GetUser().Clue, serversBytes)
+				serversBytesEncrypt, _ := utils.EncryptString(clue, serversBytes)
 				_ = conn.WriteMessage(&message.H5Message{
 					Code: message.RespServerList,
 					Data: serversBytesEncrypt,
